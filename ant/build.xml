@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="../." default="compile" name="social">
+
+
+	<!-- Read in external properties for the build -->
+	<property name="build.dir" value="${basedir}/build"/>
+	<property file="${basedir}/ant/build.properties"/>
+
+	<!-- Define global properties to be used in the build -->
+	<property name="app.name" value="${ant.project.name}"/>
+	<property name="docs.dir" value="${basedir}/docs" />
+	<property name="source.dir" value="${basedir}/src"/>
+
+	<property name="web.dir" value="${basedir}/web"/>
+	<property name="web-inf.dir" value="${web.dir}/WEB-INF"/>
+	<property name="war.filename" value="${app.name}.war"/>
+	<property name="dist.dir" value="${basedir}/dist"/>
+	<property name="build-lib.dir" value="${basedir}/build/lib"/>
+	<property name="target.dir" value="${build.dir}/target"/>
+	<property name="classes.dir" value="${basedir}/build/classes"/>
+    <property name="lib.dir" value="${basedir}/lib"/>
+
+
+	<path id="build.classpath">
+			<fileset dir="${build-lib.dir}">
+				<include name="**/*.jar"/>
+			</fileset>
+			<fileset dir="${lib.dir}">
+			<include name="**/*.jar"/>
+		</fileset>
+		</path>
+
+	<target name="init">
+		<echo message="==================================================="/>
+		<echo message="Building Project Social"/>
+		<echo message="."/>
+		<echo message="Copyright (c) 2014 Deepak."/>
+		<echo message="."/>
+		<echo message="ant.home     = ${ant.home}"/>
+		<echo message="ant.version  = ${ant.version}"/>
+		<echo message="java.home    = ${java.home}"/>
+		<echo message="java.version = ${java.version}"/>
+		<echo message="==================================================="/>
+		<mkdir dir="${classes.dir}"/>
+		<mkdir dir="${dist.dir}"/>
+		
+		<mkdir dir="${target.dir}"/>
+	</target>
+
+
+
+	<target name="clean" description="Delete all compiled objects">
+		<delete dir="${dist.dir}"/>
+		<delete dir="${classes.dir}"/>
+		
+	</target>
+
+	<target name="compile" depends="init" description="Compile all Java classes that are not up-to-date">
+		<mkdir dir="${classes.dir}"/>
+		<javac debug="on"
+               source="1.5"
+               target="1.5"
+               deprecation="true"
+               destdir="${classes.dir}"
+               includes="**/*.java"
+               srcdir="${source.dir}"
+        	   compiler="modern">
+
+			<classpath>
+				<path refid="build.classpath"/>
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="rebuild" depends="clean, compile" description="Re-Compile all Java classes"/>
+
+	<target name="jar">
+		<tstamp>
+			<format property="touch.time" pattern="MMM dd yyyy hh:mm aa"/>
+		</tstamp>
+		<jar destfile="${dist.dir}/social.jar">
+			<fileset dir="${classes.dir}">
+				<include name="**/*"/>
+			</fileset>
+		</jar>
+		<echo message="done with creating the jar file..."/>
+	</target>
+
+	<target name="war" depends="compile">
+		<tstamp>
+			<format property="touch.time" pattern="MMM dd yyyy hh:mm aa"/>
+		</tstamp>
+		<filter token="buildVersion" value="${label}"/>
+		<filter token="buildDate" value="${touch.time}"/>
+		<war warfile="${dist.dir}/${war.filename}" webxml="${web-inf.dir}/web.xml">
+			<webinf dir="${web-inf.dir}" includes="**" excludes="web.xml"/>
+			
+
+			<classes dir="${classes.dir}" includes="**/*.class" excludes="**/*Test*.class"/>
+			<lib dir="${lib.dir}" includes="*.jar,*.zip"/>
+			<fileset dir="${web.dir}" excludes="**/WEB-INF/**"/>
+		</war>
+		<echo message="done with creating the war file..."/>
+	</target>
+
+	<target name="clean.appserver" description="Delete deployment directories from appserver">
+		<delete file="${appserver.deploy.dir}/${war.filename}"/>
+		<delete dir="${appserver.deploy.dir}/${app.name}.war/"/>
+		<delete dir="${appserver.root.dir}/server/default/log/"/>
+		<delete dir="${appserver.root.dir}/server/default/tmp/"/>
+		<delete dir="${appserver.root.dir}/server/default/work/"/>
+		<delete dir="${appserver.root.dir}/server/default/data/"/>
+	</target>
+
+	<target name="deploy.appserver" depends="clean, clean.appserver, war" description="Clean and Deploy the WAR to the appserver deploy location">
+		<unwar src="${dist.dir}/${war.filename}" dest="${appserver.deploy.dir}/${app.name}.war"/>
+	</target>
+
+	<!-- target to deploy static resources like jsp files, javascript or image files -->
+	<target name="deploy.static" 
+		description="copies the static resources to the appserver's deploy directory for fast testing">
+		<copy todir="${appserver.deploy.dir}/${app.name}.war/WEB-INF/">
+			<fileset dir="${web-inf.dir}" includes="**"/>
+		</copy>
+		<copy todir="${appserver.deploy.dir}/${app.name}.war">
+			<fileset dir="${web.dir}" excludes="**/WEB-INF/**"/>
+		</copy>
+	</target>
+
+
+</project>
